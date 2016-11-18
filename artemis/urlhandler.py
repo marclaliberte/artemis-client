@@ -9,14 +9,6 @@ import os,six,subprocess
 class UrlHandler():
     def __init__(self, url):
         self.url = url
-        self._chdir()
-
-
-    def _chdir(self):
-        os.chdir(os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                              os.pardir,
-                                              os.pardir,
-                                              'thug')))
 
     def print_url(self):
         print "URL - %s" % self.url
