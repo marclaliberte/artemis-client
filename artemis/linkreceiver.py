@@ -6,6 +6,7 @@ import gevent
 import json
 import logging
 from urlhandler import UrlHandler
+from daemon import runner
 
 host = '<broker_addr>'
 port = <broker_port>
@@ -14,7 +15,7 @@ secret = '<secret>'
 channel = 'shiva.urls'
 t_id = '<ident>'
 
-logger = logging.getLogger('pyhpfeeds')
+log = logging.getLogger('Artemis')
 
 class FeedPuller(object):
     def __init__(self, ident, secret, port, host, feeds):
@@ -72,18 +73,55 @@ class FeedPuller(object):
                     self.hpc.stop()
             gevent.sleep(15)
 
+class Artemis(object):
+    def __init__(self):
+        self.stdin_path = '/dev/null'
+        self.stdout_path = '/dev/null'
+        self.stderr_path = '/dev/null'
+        self.pidfile_path = '/opt/artemis/pid/client.pid'
+        self.pidfile_timeout = 5
+        self.logfile = '/opt/artemis/logs/client.log'
+
+    def run(self):
+        logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                            filename=self.logfile,
+                            level=logging.DEBUG)
+
+        try:
+            while True:
+                log.info("Artemis Client starting up...")
+                greenlets = {}
+                puller = FeedPuller(ident,secret,port,host,channel)
+                greenlets['hpfeeds-puller'] = gevent.spawn(puller.start_listening)
+
+                try:
+                    gevent.joinall(greenlets.values())
+                except:
+                    if puller:
+                        puller.stop()
+
+                gevent.joinall(greenlets.values())
+        except (SystemExit,KeyboardInterrupt):
+            pass
+        except:
+            log.exception("Exception")
+        finally:
+            log.info("Artemis Client shutting down...")
+
 if __name__ == '__main__':
+    client_runner = runner.DaemonRunner(Artemis())
+    client_runner.daemon_context.detach_process=True
+    client_runner.do_action()
+#    greenlets = {}
 
-    greenlets = {}
+#    print "spawning feedpuller"
+#    puller = FeedPuller(ident, secret, port, host, channel)
+#    greenlets['hpfeeds-puller'] = gevent.spawn(puller.start_listening)
 
-    print "spawning feedpuller"
-    puller = FeedPuller(ident, secret, port, host, channel)
-    greenlets['hpfeeds-puller'] = gevent.spawn(puller.start_listening)
+#    try:
+#        gevent.joinall(greenlets.values())
+#    except KeyboardInterrupt as err:
+#        if puller:
+#            puller.stop()
 
-    try:
-        gevent.joinall(greenlets.values())
-    except KeyboardInterrupt as err:
-        if puller:
-            puller.stop()
-
-    gevent.joinall(greenlets.values())
+#    gevent.joinall(greenlets.values())

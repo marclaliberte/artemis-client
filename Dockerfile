@@ -35,6 +35,7 @@ RUN apt-get update && \
     graphviz \
     python-pygraphviz \
     libjpeg8-dev \
+    vim \
     autoconf && \
   rm -rf /var/lib/apt/lists/*
 
@@ -46,12 +47,8 @@ RUN pip install --upgrade pip
 #RUN pip install --upgrade pillow
 RUN pip install hpfeeds \
     gevent \
+    python-daemon \
     thug
-
-# artemis setup
-RUN mkdir /opt/artemis
-COPY artemis/* /opt/artemis/
-RUN cp /etc/thug/logging.conf.default /etc/thug/logging.conf
 
 # yara
 #RUN curl -sSL "https://github.com/plusvic/yara/archive/v3.4.0.tar.gz" | tar -xzC . && \
@@ -76,14 +73,6 @@ RUN cp /etc/thug/logging.conf.default /etc/thug/logging.conf
 #  rm -rf ssdeep-2.13 && \
 #  BUILD_LIB=1 pip install ssdeep
 
-# user setup
-RUN mkdir /home/artemis && \ 
-#  useradd -r -g artemis -s /sbin/nologin -c "Artemis User" artemis
-  groupadd artemis && \
-  useradd -d /home/artemis -c "Artemis User" -g artemis artemis && \
-  chown -R artemis:artemis /home/artemis /opt/artemis /etc/thug
-
-
 # pyv8
 WORKDIR /opt
 RUN git clone https://github.com/buffer/pyv8.git && \
@@ -104,6 +93,21 @@ RUN git clone https://github.com/buffer/pyv8.git && \
 # artemis setup
 #RUN mkdir /opt/artemis
 #COPY artemis/* /opt/artemis/
+
+# artemis setup
+RUN mkdir /opt/artemis && \
+    mkdir /opt/artemis/logs && \
+    mkdir /opt/artemis/pid
+COPY artemis/* /opt/artemis/
+RUN cp /etc/thug/logging.conf.default /etc/thug/logging.conf
+
+# user setup
+RUN mkdir /home/artemis && \
+#  useradd -r -g artemis -s /sbin/nologin -c "Artemis User" artemis
+  groupadd artemis && \
+  useradd -d /home/artemis -c "Artemis User" -g artemis artemis && \
+  chown -R artemis:artemis /home/artemis /opt/artemis /etc/thug
+
 
 USER artemis
 ENV HOME /home/artemis
