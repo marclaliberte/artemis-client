@@ -112,16 +112,3 @@ if __name__ == '__main__':
     client_runner = runner.DaemonRunner(Artemis())
     client_runner.daemon_context.detach_process=True
     client_runner.do_action()
-#    greenlets = {}
-
-#    print "spawning feedpuller"
-#    puller = FeedPuller(ident, secret, port, host, channel)
-#    greenlets['hpfeeds-puller'] = gevent.spawn(puller.start_listening)
-
-#    try:
-#        gevent.joinall(greenlets.values())
-#    except KeyboardInterrupt as err:
-#        if puller:
-#            puller.stop()
-
-#    gevent.joinall(greenlets.values())
