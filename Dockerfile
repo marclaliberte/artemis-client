@@ -1,5 +1,5 @@
 # This is a Dockerfile for creating an Artemis honeyclient container
-# drom an Ubuntu 14.04 image. Tested and known working on Ubuntu 14.04
+# drom an Ubuntu 16.04 image. Tested and known working on Ubuntu 16.04
 # Docker installs.
 # Artemis includes the Thug (https://github.com/buffer/thug) honeyclient.
 
@@ -50,29 +50,6 @@ RUN pip install hpfeeds \
     python-daemon \
     thug
 
-# yara
-#RUN curl -sSL "https://github.com/plusvic/yara/archive/v3.4.0.tar.gz" | tar -xzC . && \
-#  cd yara-3.4.0 && \
-#  ./bootstrap.sh && \
-#  ./configure && \
-#  make && \
-#  make install && \
-#  cd yara-python/ && \
-#  python setup.py build && \
-#  python setup.py install && \
-#  cd ../.. && \
-#  rm -rf yara-3.4.0 && \
-#  ldconfig
-
-# ssdeep
-#RUN curl -sSL https://github.com/REMnux/docker/raw/master/dependencies/ssdeep-2.13.tar.gz |  tar -xzC .  && \
-#  cd ssdeep-2.13 && \
-#  ./configure && \
-#  make install && \
-#  cd .. && \
-#  rm -rf ssdeep-2.13 && \
-#  BUILD_LIB=1 pip install ssdeep
-
 # pyv8
 WORKDIR /opt
 RUN git clone https://github.com/buffer/pyv8.git && \
@@ -81,18 +58,6 @@ RUN git clone https://github.com/buffer/pyv8.git && \
   python setup.py install && \
   cd .. && \
   rm -rf pyv8
-
-# thug
-#RUN git clone https://github.com/marclaliberte/thug.git && \
-#  chmod a+x thug/src/thug.py && \
-#  mkdir thug/logs && \
-#  mkdir thug/files && \
-#  cp thug/src/Logging/logging.conf.default thug/src/Logging/logging.conf && \
-#  chown -R artemis:artemis /opt/thug
-
-# artemis setup
-#RUN mkdir /opt/artemis
-#COPY artemis/* /opt/artemis/
 
 # artemis setup
 RUN mkdir /opt/artemis && \
@@ -103,7 +68,6 @@ RUN cp /etc/thug/logging.conf.default /etc/thug/logging.conf
 
 # user setup
 RUN mkdir /home/artemis && \
-#  useradd -r -g artemis -s /sbin/nologin -c "Artemis User" artemis
   groupadd artemis && \
   useradd -d /home/artemis -c "Artemis User" -g artemis artemis && \
   chown -R artemis:artemis /home/artemis /opt/artemis /etc/thug
@@ -113,4 +77,3 @@ USER artemis
 ENV HOME /home/artemis
 ENV USER artemis
 WORKDIR /opt/artemis
-#ENTRYPOINT ["/opt/thug/tools/artemis/artemis.sh"]
