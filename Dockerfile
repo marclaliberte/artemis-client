@@ -64,6 +64,7 @@ RUN mkdir /opt/artemis && \
     mkdir /opt/artemis/logs && \
     mkdir /opt/artemis/pid
 COPY artemis/* /opt/artemis/
+RUN cp /opt/artemis/config.cfg.default /opt/artemis/config.cfg
 RUN cp /etc/thug/logging.conf.default /etc/thug/logging.conf
 
 # user setup
