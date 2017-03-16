@@ -3,28 +3,24 @@
 from datetime import datetime
 import hpfeeds
 import gevent
+import os
 import json
 import logging
 from urlhandler import UrlHandler
 from daemon import runner
+from ConfigParser import ConfigParser
+from ConfigParser import SafeConfigParser
 
-host = '<broker_addr>'
-port = <broker_port>
-ident = '<ident>'
-secret = '<secret>'
-channel = 'shiva.urls'
-t_id = '<ident>'
-
-log = logging.getLogger('Artemis')
+log = logging.getLogger('Artemis-Client')
 
 class FeedPuller(object):
-    def __init__(self, ident, secret, port, host, feeds):
+    def __init__(self, config):
 
-        self.ident = ident
-        self.secret = secret
-        self.port = port
-        self.host = host
-        self.feeds = feeds
+        self.ident = config['hpf_ident']
+        self.secret = config['hpf_secret']
+        self.port = config['hpf_port']
+        self.host = config['hpf_host']
+        self.feeds = 'shiva.urls'
         self.last_received = datetime.now()
         self.hpc = None
         self.enabled = True
@@ -81,6 +77,39 @@ class Artemis(object):
         self.pidfile_path = '/opt/artemis/pid/client.pid'
         self.pidfile_timeout = 5
         self.logfile = '/opt/artemis/logs/client.log'
+        self.config_file = '/opt/artemis/config.cfg'
+        self.thug_config = '/etc/thug/logging.conf'
+
+    def parse_config(self):
+        if not os.path.isfile(self.config_file):
+            log.critical("Could not find configuration file: {0}".format(self.config_file))
+            sys.exit("Could not find configuration file: {0}".format(self.config_file))
+
+        parser = ConfigParser()
+        parser.read(self.config_file)
+
+        config = {}
+
+        config['hpf_host'] = parser.get('hpfeeds','host')
+        config['hpf_port'] = parser.getint('hpfeeds','port')
+        config['hpf_ident'] = parser.get('hpfeeds','ident')
+        config['hpf_secret'] = parser.get('hpfeeds','secret')
+
+        return config
+
+    def conf_thug(self,config):
+        parser = ConfigParser()
+        parser.read(self.thug_config)
+
+        parser.set('hpfeeds','enable', 'True')
+        parser.set('hpfeeds','host', config['hpf_host'])
+        parser.set('hpfeeds','port', config['hpf_port'])
+        parser.set('hpfeeds','ident', config['hpf_ident'])
+        parser.set('hpfeeds','secret', config['hpf_secret'])
+
+        with open(self.thug_config, 'w') as configfile:
+            parser.write(configfile)
+ 
 
     def run(self):
         logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -89,9 +118,16 @@ class Artemis(object):
 
         try:
             while True:
+
                 log.info("Artemis Client starting up...")
+                log.debug("Parsing Artemis configuration")
+                c = self.parse_config()
+ 
+                log.debug("Configuring thug logging settings")
+                self.conf_thug(c)
+
                 greenlets = {}
-                puller = FeedPuller(ident,secret,port,host,channel)
+                puller = FeedPuller(c)
                 greenlets['hpfeeds-puller'] = gevent.spawn(puller.start_listening)
 
                 try:
