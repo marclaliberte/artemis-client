@@ -4,7 +4,9 @@
 #
 # This class accepts URLs from the URLReceiver and starts thug
 # jobs to investigate
-import os,six,subprocess
+import os,six,subprocess,logging
+
+log = logging.getLogger('Artemis-Client')
 
 class UrlHandler():
     def __init__(self, url):
@@ -31,7 +33,7 @@ class UrlHandler():
         log.info("Processing: %s" % str(self.url))
         print("Processing: %s" % str(self.url))
 
-        command = ["thug", "-F", "-M", str(self.url)]
+        command = ["thug", "-F", "-M", "-v", "-t10",str(self.url)]
 
         print(command)
 

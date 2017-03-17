@@ -13,57 +13,6 @@ from ConfigParser import SafeConfigParser
 
 log = logging.getLogger('Artemis-Client')
 
-class FeedPuller(object):
-    def __init__(self, config):
-
-        self.ident = config['hpf_ident']
-        self.secret = config['hpf_secret']
-        self.port = config['hpf_port']
-        self.host = config['hpf_host']
-        self.feeds = 'shiva.urls'
-        self.last_received = datetime.now()
-        self.hpc = None
-        self.enabled = True
-
-    def start_listening(self):
-
-        gevent.spawn_later(15, self._activity_checker)
-        while self.enabled:
-            try:
-                self.hpc = hpfeeds.new(self.host, self.port, self.ident, self.secret)
-
-                def on_error(payload):
-                    log.critical("Error message from broker: {0}".format(payload))
-                    self.hpc.stop()
-
-                def on_message(ident, chan, payload):
-                    self.last_received = datetime.now()
-                    data = json.loads(str(payload))
-                    site_id = data['id']
-                    url = data['url'].encode('unicode-escape')
-                    self.handler = UrlHandler(url)
-                    self.handler.process()
-
-                self.hpc.subscribe(self.feeds)
-                self.hpc.run(on_message, on_error)
-            except Exception as ex:
-                print ex
-                self.hpc.stop()
-            gevent.sleep(5)
-
-    def stop(self):
-        self.hpc.stop()
-        self.enabled = False
-
-    def _activity_checker(self):
-        while self.enabled:
-            if self.hpc is not None and self.hpc.connected:
-                difference = datetime.now() - self.last_received
-                if difference.seconds > 15:
-                    log.info("No activity for 15 seconds, forcing reconnect")
-                    self.hpc.stop()
-            gevent.sleep(15)
-
 class Artemis(object):
     def __init__(self):
         self.stdin_path = '/dev/null'
@@ -74,6 +23,8 @@ class Artemis(object):
         self.logfile = '/opt/artemis/logs/client.log'
         self.config_file = '/opt/artemis/config.cfg'
         self.thug_config = '/etc/thug/logging.conf'
+        self.feeds = 'shiva.urls'
+        self.hpc = None
 
     def parse_config(self):
         if not os.path.isfile(self.config_file):
@@ -121,17 +72,29 @@ class Artemis(object):
                 log.debug("Configuring thug logging settings")
                 self.conf_thug(c)
 
-                greenlets = {}
-                puller = FeedPuller(c)
-                greenlets['hpfeeds-puller'] = gevent.spawn(puller.start_listening)
-
                 try:
-                    gevent.joinall(greenlets.values())
-                except:
-                    if puller:
-                        puller.stop()
+                    log.info("Connecting to hpfeeds")
+                    self.hpc = hpfeeds.new(c['hpf_host'],c['hpf_port'],c['hpf_ident'],c['hpf_secret'])
 
-                gevent.joinall(greenlets.values())
+                    def on_error(payload):
+                        log.critical("Error message from broker: {0}".format(payload))
+                        self.hpc.stop()
+
+                    def on_message(ident, chan, payload):
+                        data = json.loads(str(payload))
+                        if data['url'] is None:
+                            return
+                        url = data['url'].encode('unicode-escape')
+                        self.handler = UrlHandler(url)
+                        self.handler.process()
+
+                    self.hpc.subscribe(self.feeds)
+                    self.hpc.run(on_message, on_error)
+
+                except Exception as ex:
+                    log.critical("Exception in hpfeeds {0}".format(ex))
+                    self.hpc.stop()
+
         except (SystemExit,KeyboardInterrupt):
             pass
         except:
