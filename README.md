@@ -16,8 +16,16 @@ Configure the connection and authentication settings for hpfeeds when
 starting the Docker container
 
  ```
- docker run -it -e BROKER_ADDR='example.com' -e BROKER_PORT='20000' -e IDENT='artemis-1' -e SECRET='test' marclaliberte/artemis-client /bin/bash
+ docker run -it marclaliberte/artemis-client /bin/bash
 
  ```
 
-Once inside the container, run /opt/artemis/artemis.sh
+Inside the container, add hpfeeds settings to /opt/artemis/config.cfg
+ ```
+ vim /opt/artemis/config.cfg
+ ```
+
+Start the client
+ ```
+ python /opt/artemis/artemis.py start
+ ```
