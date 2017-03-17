@@ -25,9 +25,6 @@ class FeedPuller(object):
         self.hpc = None
         self.enabled = True
 
-    def handle_url(self,url):
-        print "Time: %s -- URL: %s" % (self.last_received, url)
-
     def start_listening(self):
 
         gevent.spawn_later(15, self._activity_checker)
@@ -36,7 +33,7 @@ class FeedPuller(object):
                 self.hpc = hpfeeds.new(self.host, self.port, self.ident, self.secret)
 
                 def on_error(payload):
-                    print 'Error message from broker: {0}'.format(payload)
+                    log.critical("Error message from broker: {0}".format(payload))
                     self.hpc.stop()
 
                 def on_message(ident, chan, payload):
@@ -46,8 +43,6 @@ class FeedPuller(object):
                     url = data['url'].encode('unicode-escape')
                     self.handler = UrlHandler(url)
                     self.handler.process()
-                    #self.handle_url(url)
-                    #print "Time: %s --- Site: %s - URL: %s" % (self.last_received, site_id, url)
 
                 self.hpc.subscribe(self.feeds)
                 self.hpc.run(on_message, on_error)
@@ -65,7 +60,7 @@ class FeedPuller(object):
             if self.hpc is not None and self.hpc.connected:
                 difference = datetime.now() - self.last_received
                 if difference.seconds > 15:
-                    print "No activity for 15 seconds, forcing reconnect"
+                    log.info("No activity for 15 seconds, forcing reconnect")
                     self.hpc.stop()
             gevent.sleep(15)
 
