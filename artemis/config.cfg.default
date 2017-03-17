@@ -1,0 +1,5 @@
+[hpfeeds]
+host = [Destination]
+port = 20000
+ident = [Identifier]
+secret = [Secret]

@@ -28,6 +28,7 @@ class UrlHandler():
         Execute thug to process url
         """
 
+        log.info("Processing: %s" % str(self.url))
         print("Processing: %s" % str(self.url))
 
         command = ["thug", "-F", "-M", str(self.url)]
@@ -42,5 +43,6 @@ class UrlHandler():
 
             if line.find("] Saving log analysis at ") >= 0:
                 pathname = line.split(" ")[-1].strip()
+                log.info("Finished Analysis")
                 print "Finished Analysis"
 
