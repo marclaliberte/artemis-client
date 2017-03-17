@@ -2,7 +2,6 @@
 
 from datetime import datetime
 import hpfeeds
-import gevent
 import os
 import json
 import logging
