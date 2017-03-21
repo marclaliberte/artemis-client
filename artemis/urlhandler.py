@@ -45,6 +45,6 @@ class UrlHandler():
 
             if line.find("] Saving log analysis at ") >= 0:
                 pathname = line.split(" ")[-1].strip()
-                log.info("Finished Analysis")
+                log.info("Finished Analysis for: %s" % str(self.url))
                 print "Finished Analysis"
 
