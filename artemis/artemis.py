@@ -15,8 +15,8 @@ log = logging.getLogger('Artemis-Client')
 class Artemis(object):
     def __init__(self):
         self.stdin_path = '/dev/null'
-        self.stdout_path = '/dev/null'
-        self.stderr_path = '/dev/null'
+        self.stdout_path = '/opt/artemis/logs/artemis_out.log'
+        self.stderr_path = '/opt/artemis/logs/artemis_err.log'
         self.pidfile_path = '/opt/artemis/pid/client.pid'
         self.pidfile_timeout = 5
         self.logfile = '/opt/artemis/logs/client.log'
@@ -80,10 +80,12 @@ class Artemis(object):
                         self.hpc.stop()
 
                     def on_message(ident, chan, payload):
+                        log.debug("Message received from {0}".format(ident))
                         data = json.loads(str(payload))
-                        if data['url'] is None:
+                        if 'url' not in data.keys():
+                            log.error("No url in payload")
                             return
-                        url = data['url'].encode('unicode-escape')
+                        url = data["url"].encode('unicode-escape')
                         self.handler = UrlHandler(url)
                         self.handler.process()
 
